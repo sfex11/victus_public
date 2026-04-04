@@ -32,5 +32,9 @@
     <p>© 2026 빅터스 연구소 · Powered by <a href="https://pages.github.com" target="_blank">GitHub Pages</a></p>
   </footer>
   <script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
 </body>
 </html>
