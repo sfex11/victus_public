@@ -10,7 +10,7 @@ permalink: /blog.html
     <a href="{{ post.url | relative_url }}" class="post-card-link">
       <div class="post-card-body">
         <div class="post-card-meta">
-          <time>{{ post.date | date: "%Y-%m-%d" }}</time>
+          <time>{{ post.date | date: "%Y.%m.%d" }}</time>
           {% if post.series %}
           <span class="post-series">📖 {{ post.series }}</span>
           {% endif %}
@@ -28,11 +28,11 @@ permalink: /blog.html
 {% if paginator.total_pages > 1 %}
 <nav class="pagination">
   {% if paginator.previous_page %}
-  <a href="{{ paginator.previous_page_path | relative_url }}" class="prev">&larr; 이전</a>
+  <a href="{{ paginator.previous_page_path | relative_url }}" class="prev">← 이전</a>
   {% endif %}
   <span class="page-num">{{ paginator.page }} / {{ paginator.total_pages }}</span>
   {% if paginator.next_page %}
-  <a href="{{ paginator.next_page_path | relative_url }}" class="next">다음 &rarr;</a>
+  <a href="{{ paginator.next_page_path | relative_url }}" class="next">다음 →</a>
   {% endif %}
 </nav>
 {% endif %}

@@ -4,7 +4,7 @@ layout: default
 <article class="post">
   <header class="post-header">
     <div class="post-meta">
-      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%Y-%m-%d" }}</time>
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%Y.%m.%d" }}</time>
       {% if page.series %}
       <span class="post-series">📖 {{ page.series }}</span>
       {% endif %}
@@ -26,10 +26,10 @@ layout: default
   {% endif %}
   <nav class="post-nav">
     {% if page.previous %}
-    <a href="{{ page.previous.url | relative_url }}" class="prev">&larr; {{ page.previous.title | truncate: 30 }}</a>
+    <a href="{{ page.previous.url | relative_url }}" class="prev">← {{ page.previous.title | truncate: 25 }}</a>
     {% endif %}
     {% if page.next %}
-    <a href="{{ page.next.url | relative_url }}" class="next">{{ page.next.title | truncate: 30 }} &rarr;</a>
+    <a href="{{ page.next.url | relative_url }}" class="next">{{ page.next.title | truncate: 25 }} →</a>
     {% endif %}
   </nav>
 </article>
