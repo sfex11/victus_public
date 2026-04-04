@@ -1,0 +1,39 @@
+---
+layout: default
+title: 시리즈
+permalink: /series.html
+---
+<h1 class="page-title">📚 시리즈</h1>
+<div class="series-list">
+  {% assign series_list = "" | split: "" %}
+  {% for post in site.posts %}
+    {% if post.series %}
+      {% unless series_list contains post.series %}
+        {% assign series_list = series_list | push: post.series %}
+      {% endunless %}
+    {% endif %}
+  {% endfor %}
+  {% for series in series_list %}
+  <div class="series-group">
+    <h2 class="series-name">{{ series }}</h2>
+    <div class="post-list">
+      {% assign series_posts = site.posts | where: "series", series %}
+      {% for post in series_posts %}
+      <article class="post-card">
+        <a href="{{ post.url | relative_url }}" class="post-card-link">
+          <div class="post-card-body">
+            <time class="post-card-date">{{ post.date | date: "%Y-%m-%d" }}</time>
+            <h3 class="post-card-title">{{ post.title }}</h3>
+            {% if post.excerpt %}
+            <p class="post-card-excerpt">{{ post.excerpt | strip_html | truncate: 80 }}</p>
+            {% endif %}
+          </div>
+        </a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <p class="empty">아직 시리즈가 없습니다.</p>
+  {% endfor %}
+</div>
