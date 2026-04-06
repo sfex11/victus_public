@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>BigVolver Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #0a0a0f;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+
+  .hero .subtitle {
+    font-size: 18px;
+    color: #888;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  .hero .tagline {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 8px 24px;
+    border: 1px solid #333;
+    border-radius: 100px;
+    font-size: 14px;
+    color: #a855f7;
+    letter-spacing: 1px;
+  }
+
+  /* ── Main Architecture Diagram ── */
+  .arch-container {
+    width: 100%;
+    max-width: 1100px;
+    position: relative;
+  }
+
+  /* Flow arrows */
+  .flow-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 30px 0;
+  }
+
+  .flow-arrow {
+    color: #444;
+    font-size: 28px;
+  }
+
+  /* ── 5 Subsystem Cards ── */
+  .systems-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .sys-card {
+    background: linear-gradient(145deg, #13131a, #1a1a25);
+    border: 1px solid #2a2a3a;
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+
+  .sys-card:hover {
+    transform: translateY(-4px);
+    border-color: #6366f1;
+  }
+
+  .sys-card .icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .sys-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .sys-card .role {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .sys-card .features {
+    list-style: none;
+    text-align: left;
+    font-size: 11px;
+    color: #aaa;
+    padding: 0 4px;
+  }
+
+  .sys-card .features li {
+    padding: 3px 0;
+    border-bottom: 1px solid #1f1f2f;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sys-card .features li:last-child {
+    border-bottom: none;
+  }
+
+  .sys-card .features li::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .sys-card:nth-child(1) .features li::before { background: #6366f1; }
+  .sys-card:nth-child(2) .features li::before { background: #22d3ee; }
+  .sys-card:nth-child(3) .features li::before { background: #f97316; }
+  .sys-card:nth-child(4) .features li::before { background: #a855f7; }
+  .sys-card:nth-child(5) .features li::before { background: #10b981; }
+
+  .sys-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .sys-card:nth-child(1)::after { background: linear-gradient(90deg, #6366f1, #818cf8); }
+  .sys-card:nth-child(2)::after { background: linear-gradient(90deg, #22d3ee, #67e8f9); }
+  .sys-card:nth-child(3)::after { background: linear-gradient(90deg, #f97316, #fb923c); }
+  .sys-card:nth-child(4)::after { background: linear-gradient(90deg, #a855f7, #c084fc); }
+  .sys-card:nth-child(5)::after { background: linear-gradient(90deg, #10b981, #34d399); }
+
+  /* ── Evolution Cycle ── */
+  .cycle-section {
+    margin: 50px 0;
+  }
+
+  .cycle-section h2 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #fff;
+  }
+
+  .cycle-flow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .cycle-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 140px;
+    text-align: center;
+  }
+
+  .cycle-step .circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .cycle-step .step-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .cycle-step .step-desc {
+    font-size: 11px;
+    color: #777;
+    margin-top: 4px;
+  }
+
+  .cycle-arrow {
+    font-size: 24px;
+    color: #333;
+    margin: 0 8px;
+    align-self: center;
+    margin-bottom: 30px;
+  }
+
+  .cs-gen .circle { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+  .cs-back .circle { background: linear-gradient(135deg, #22d3ee, #0891b2); }
+  .cs-trade .circle { background: linear-gradient(135deg, #10b981, #059669); }
+  .cs-eval .circle { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+  .cs-cull .circle { background: linear-gradient(135deg, #f97316, #ea580c); }
+
+  /* ── Safety Layers ── */
+  .safety-section {
+    margin: 50px 0;
+  }
+
+  .safety-section h2 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #fff;
+  }
+
+  .safety-layers {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .shield {
+    position: relative;
+    width: 280px;
+    height: 200px;
+  }
+
+  .shield-layer {
+    position: absolute;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+    transition: transform 0.3s;
+  }
+
+  .shield-layer:hover {
+    transform: scale(1.05);
+  }
+
+  .shield-1 {
+    width: 280px; height: 200px;
+    top: 0; left: 0;
+    background: rgba(249, 115, 22, 0.1);
+    border: 2px solid rgba(249, 115, 22, 0.4);
+  }
+
+  .shield-2 {
+    width: 210px; height: 150px;
+    top: 25px; left: 35px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid rgba(239, 68, 68, 0.4);
+  }
+
+  .shield-3 {
+    width: 140px; height: 100px;
+    top: 50px; left: 70px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 2px solid rgba(16, 185, 129, 0.5);
+  }
+
+  .shield-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .shield-desc {
+    font-size: 10px;
+    color: #999;
+    text-align: center;
+    padding: 0 10px;
+  }
+
+  /* ── Multi-Agent Section ── */
+  .agents-section {
+    margin: 50px 0;
+  }
+
+  .agents-section h2 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #fff;
+  }
+
+  .agents-grid {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .agent-card {
+    width: 220px;
+    background: #13131a;
+    border: 1px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+
+  .agent-card:hover { border-color: #a855f7; }
+
+  .agent-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .agent-card:nth-child(1) .agent-avatar { background: rgba(99,102,241,0.2); }
+  .agent-card:nth-child(2) .agent-avatar { background: rgba(168,85,247,0.2); }
+  .agent-card:nth-child(3) .agent-avatar { background: rgba(239,68,68,0.2); }
+  .agent-card:nth-child(4) .agent-avatar { background: rgba(34,211,238,0.2); }
+
+  .agent-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .agent-weight {
+    font-size: 11px;
+    color: #f97316;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .agent-role {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+  }
+
+  .vote-result {
+    margin-top: 20px;
+    text-align: center;
+    padding: 16px;
+    background: #13131a;
+    border: 1px dashed #333;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .vote-result .verdict {
+    font-size: 20px;
+    font-weight: 800;
+    color: #10b981;
+  }
+
+  .vote-result .sub {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  /* ── Fallback Chain ── */
+  .fallback-section {
+    margin: 50px 0;
+  }
+
+  .fallback-section h2 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #fff;
+  }
+
+  .fallback-chain {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .fallback-step {
+    padding: 16px 28px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid;
+  }
+
+  .fallback-step.fb-1 {
+    background: rgba(99,102,241,0.1);
+    border-color: rgba(99,102,241,0.4);
+  }
+
+  .fallback-step.fb-2 {
+    background: rgba(168,85,247,0.1);
+    border-color: rgba(168,85,247,0.4);
+  }
+
+  .fallback-step.fb-3 {
+    background: rgba(16,185,129,0.1);
+    border-color: rgba(16,185,129,0.4);
+  }
+
+  .fallback-step .fb-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .fallback-step .fb-desc {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .fallback-arrow {
+    color: #444;
+    font-size: 20px;
+  }
+
+  /* ── Metrics Bar ── */
+  .metrics-section {
+    margin: 50px 0;
+    text-align: center;
+  }
+
+  .metrics-section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #fff;
+  }
+
+  .metrics-bar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .metric-item {
+    text-align: center;
+  }
+
+  .metric-value {
+    font-size: 36px;
+    font-weight: 800;
+  }
+
+  .metric-item:nth-child(1) .metric-value { color: #6366f1; }
+  .metric-item:nth-child(2) .metric-value { color: #f97316; }
+  .metric-item:nth-child(3) .metric-value { color: #10b981; }
+  .metric-item:nth-child(4) .metric-value { color: #a855f7; }
+  .metric-item:nth-child(5) .metric-value { color: #ec4899; }
+
+  .metric-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 60px;
+    padding: 20px;
+    border-top: 1px solid #1a1a2a;
+    font-size: 12px;
+    color: #444;
+  }
+
+  @media (max-width: 900px) {
+    .systems-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .systems-grid .sys-card:last-child {
+      grid-column: span 2;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>BigVolver</h1>
+  <p class="subtitle">전략이 스스로 진화한다 — 인간은 방향만 정하고, AI가 나머지를 설계·검증·도태한다.</p>
+  <span class="tagline">AUTONOMOUS STRATEGY EVOLUTION SYSTEM</span>
+</div>
+
+<!-- 5 SUBSYSTEMS -->
+<div class="arch-container">
+  <div class="systems-grid">
+    <div class="sys-card">
+      <div class="icon">🧠</div>
+      <h3>EVOLUTION ENGINE</h3>
+      <p class="role">진화 루프 심장부</p>
+      <ul class="features">
+        <li>100전략 동시 Paper Trading</li>
+        <li>1시간 주기 자동 진화</li>
+        <li>하위 20% 자동 교체</li>
+        <li>세대 추적 (generation)</li>
+        <li>AI 전략 생성 (5모델)</li>
+      </ul>
+    </div>
+
+    <div class="sys-card">
+      <div class="icon">🔧</div>
+      <h3>STRATEGY TOOLKIT</h3>
+      <p class="role">DSL 파서 + 실행 엔진</p>
+      <ul class="features">
+        <li>YAML 기반 전략 정의</li>
+        <li>표현식 컴파일러</li>
+        <li>지표 8종 (EMA/SMA/RSI...)</li>
+        <li>롱+숏 헤징 모드</li>
+        <li>백테스트 엔진</li>
+      </ul>
+    </div>
+
+    <div class="sys-card">
+      <div class="icon">🛡️</div>
+      <h3>CONSTITUTION</h3>
+      <p class="role">3계층 안전 시스템</p>
+      <ul class="features">
+        <li>불변 제약 (martingale 금지)</li>
+        <li>Doom Loop 반복 감지</li>
+        <li>Auto Revert 자동 복귀</li>
+        <li>리스크 한도 강제</li>
+        <li>Nunchi Score 기준</li>
+      </ul>
+    </div>
+
+    <div class="sys-card">
+      <div class="icon">🤝</div>
+      <h3>MULTI-AGENT</h3>
+      <p class="role">4롤 합의 시스템</p>
+      <ul class="features">
+        <li>Technical / Sentiment</li>
+        <li>Risk Manager (2x weight)</li>
+        <li>Macro Strategist</li>
+        <li>SNOWBALL 투표 규칙</li>
+        <li>불확실성 → 자동 PAUSE</li>
+      </ul>
+    </div>
+
+    <div class="sys-card">
+      <div class="icon">📚</div>
+      <h3>PLAYBOOK & MEMORY</h3>
+      <p class="role">지식 기반 장기 기억</p>
+      <ul class="features">
+        <li>성공 패턴 저장 (regime별)</li>
+        <li>ArXiv 논문 RAG</li>
+        <li>Context Compactor</li>
+        <li>Thinking/Reasoning 2단계</li>
+        <li>3단계 AI 폴백</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- EVOLUTION CYCLE -->
+<div class="cycle-section">
+  <h2>⚡ Evolution Cycle</h2>
+  <div class="cycle-flow">
+    <div class="cycle-step cs-gen">
+      <div class="circle">🧬</div>
+      <span class="step-label">GENERATE</span>
+      <span class="step-desc">AI가 20개 전략 생성</span>
+    </div>
+    <span class="cycle-arrow">→</span>
+    <div class="cycle-step cs-back">
+      <div class="circle">🔬</div>
+      <span class="step-label">BACKTEST</span>
+      <span class="step-desc">30일 과거데이터 검증</span>
+    </div>
+    <span class="cycle-arrow">→</span>
+    <div class="cycle-step cs-trade">
+      <div class="circle">📈</div>
+      <span class="step-label">PAPER TRADE</span>
+      <span class="step-desc">실시간 가상매매</span>
+    </div>
+    <span class="cycle-arrow">→</span>
+    <div class="cycle-step cs-eval">
+      <div class="circle">📊</div>
+      <span class="step-label">EVALUATE</span>
+      <span class="step-desc">Sharpe/WinRate 순위</span>
+    </div>
+    <span class="cycle-arrow">→</span>
+    <div class="cycle-step cs-cull">
+      <div class="circle">♻️</div>
+      <span class="step-label">EVOLVE</span>
+      <span class="step-desc">하위 도태 → 새 세대</span>
+    </div>
+  </div>
+</div>
+
+<!-- SAFETY LAYERS -->
+<div class="safety-section">
+  <h2>🛡️ 3-Layer Safety System</h2>
+  <div class="safety-layers">
+    <div class="shield">
+      <div class="shield-layer shield-1">
+        <span class="shield-label">Layer 1: Constitution</span>
+        <span class="shield-desc">불변 제약 — martingale 금지, look-ahead 방지, SL/TP 범위 강제</span>
+      </div>
+      <div class="shield-layer shield-2">
+        <span class="shield-label">Layer 2: Doom Loop</span>
+        <span class="shield-desc">fingerprint 해시로 동일 전략 반복 생성 차단</span>
+      </div>
+      <div class="shield-layer shield-3">
+        <span class="shield-label">Layer 3: Auto Revert</span>
+        <span class="shield-desc">성과 하락 시 이전 최고 전략으로 롤백</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MULTI-AGENT -->
+<div class="agents-section">
+  <h2>🤝 Multi-Agent Consensus</h2>
+  <div class="agents-grid">
+    <div class="agent-card">
+      <div class="agent-avatar">📊</div>
+      <div class="agent-name">Technical Analyst</div>
+      <div class="agent-weight">Weight: 1×</div>
+      <div class="agent-role">EMA/SMA 크로스오버, RSI 과매수·과매도, ATR 변동성</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar">🎯</div>
+      <div class="agent-name">Sentiment Analyst</div>
+      <div class="agent-weight">Weight: 1×</div>
+      <div class="agent-role">거래량 이상, 공포/탐욕 사이클, 오더플로우 불균형</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar">🚨</div>
+      <div class="agent-name">Risk Manager</div>
+      <div class="agent-weight">Weight: 2×</div>
+      <div class="agent-role">자본 보호 우선 — STOP/PAUSE에 2x 보팅파워</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar">🌍</div>
+      <div class="agent-name">Macro Strategist</div>
+      <div class="agent-weight">Weight: 1×</div>
+      <div class="agent-role">트렌드 방향, 마켓 사이클, ADX 트렌드 강도</div>
+    </div>
+  </div>
+  <div class="vote-result">
+    <div class="verdict">GENERATE ✅</div>
+    <div class="sub">Agreement: 85% · Strategies to create: 20 · Risk Score: 32/100</div>
+  </div>
+</div>
+
+<!-- AI FALLBACK -->
+<div class="fallback-section">
+  <h2>🔗 AI Fallback Chain</h2>
+  <div class="fallback-chain">
+    <div class="fallback-step fb-1">
+      <div class="fb-title">OpenRouter</div>
+      <div class="fb-desc">5 무료모델 라운드로빈</div>
+    </div>
+    <span class="fallback-arrow">→ 429</span>
+    <div class="fallback-step fb-2">
+      <div class="fb-title">Anthropic API</div>
+      <div class="fb-desc">claude-sonnet-4 직접 호출</div>
+    </div>
+    <span class="fallback-arrow">→ 장애</span>
+    <div class="fallback-step fb-3">
+      <div class="fb-title">Claude CLI</div>
+      <div class="fb-desc">claude -p 최종 폴백</div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS METRICS -->
+<div class="metrics-section">
+  <h2>🎯 Success Criteria</h2>
+  <div class="metrics-bar">
+    <div class="metric-item">
+      <div class="metric-value">> 1.0</div>
+      <div class="metric-label">Sharpe Ratio</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-value">< 20%</div>
+      <div class="metric-label">Max Drawdown</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-value">> 45%</div>
+      <div class="metric-label">Win Rate</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-value">≥ 10</div>
+      <div class="metric-label">Total Trades</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-value">> 0.5</div>
+      <div class="metric-label">Nunchi Score</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  BigVolver — 빅터스 연구소에서 탄생한 자율 진화 매매전략 시스템
+</div>
+
+</body>
+</html>
