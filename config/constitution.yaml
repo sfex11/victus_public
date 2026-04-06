@@ -1,0 +1,166 @@
+# Constitution - DSL Strategy Evolver 제약조건
+# Quant-Autoresearch에서 영감을 받은 불변 규칙 시스템
+
+# ============================================================================
+# MANDATE (핵심 목표)
+# ============================================================================
+mandate: "Maximize Nunchi Score with strict risk control"
+
+# ============================================================================
+# RISK LIMITS (리스크 제한)
+# ============================================================================
+risk_limits:
+  max_drawdown: 0.20
+  max_leverage: 3.0
+  max_position_size: 200
+  min_trades: 10
+  max_positions: 2
+  stop_loss_range: [0.01, 0.05]
+  take_profit_range: [0.02, 0.10]
+
+# ============================================================================
+# FORBIDDEN PATTERNS (금지 패턴)
+# ============================================================================
+forbidden_patterns:
+  - pattern: "martingale"
+    reason: "martingale betting prohibited"
+    severity: "critical"
+  - pattern: "averaging_down"
+    reason: "averaging down prohibited"
+    severity: "high"
+  - pattern: "double_down"
+    reason: "doubling down prohibited"
+    severity: "high"
+  - pattern: "future"
+    reason: "future data access suspected"
+    severity: "medium"
+  - pattern: "next_bar"
+    reason: "future data access suspected"
+    severity: "medium"
+  - pattern: "import os"
+    reason: "file system access prohibited"
+    severity: "critical"
+  - pattern: "import sys"
+    reason: "system access prohibited"
+    severity: "critical"
+  - pattern: "import subprocess"
+    reason: "subprocess prohibited"
+    severity: "critical"
+
+# ============================================================================
+# ALLOWED INDICATORS (허용된 지표)
+# ============================================================================
+allowed_indicators:
+  - name: ema
+    description: "Exponential Moving Average"
+    parameters: [period]
+    example: "ema(20)"
+  - name: sma
+    description: "Simple Moving Average"
+    parameters: [period]
+    example: "sma(50)"
+  - name: rsi
+    description: "Relative Strength Index"
+    parameters: [period]
+    example: "rsi(14)"
+  - name: macd
+    description: "Moving Average Convergence Divergence"
+    parameters: [fast, slow, signal]
+    example: "macd(12, 26, 9)"
+  - name: atr
+    description: "Average True Range"
+    parameters: [period]
+    example: "atr(14)"
+  - name: bollinger
+    description: "Bollinger Bands"
+    parameters: [period, std_dev]
+    example: "bollinger(20, 2)"
+  - name: adx
+    description: "Average Directional Index"
+    parameters: [period]
+    example: "adx(14)"
+  - name: obv
+    description: "On-Balance Volume"
+    parameters: []
+    example: "obv()"
+
+# ============================================================================
+# GOAL (목표 설정)
+# ============================================================================
+goal:
+  metric: "nunchi_score"
+  threshold: 0.5
+  success_conditions:
+    - metric: "sharpe_ratio"
+      operator: ">"
+      value: 1.0
+    - metric: "max_drawdown"
+      operator: "<"
+      value: 0.20
+    - metric: "win_rate"
+      operator: ">"
+      value: 0.45
+    - metric: "total_trades"
+      operator: ">="
+      value: 10
+
+# ============================================================================
+# EVOLUTION PARAMETERS (진화 파라미터)
+# ============================================================================
+evolution:
+  interval: "1h"
+  strategies_to_generate: 20
+  replace_bottom_percent: 20
+  max_strategies: 100
+  backtest_days: 30
+
+# ============================================================================
+# AI PARAMETERS (AI 파라미터)
+# ============================================================================
+ai:
+  models:
+    - "meta-llama/llama-3.2-3b-instruct:free"
+    - "google/gemma-3-27b-it:free"
+    - "stepfun/step-3.5-flash:free"
+    - "z-ai/glm-4.5-air:free"
+    - "mistralai/mistral-small-3.1-24b-instruct:free"
+  rotation: "round-robin"
+  rate_limit_wait: 60
+  max_retries: 3
+  temperature: 0.8
+  max_tokens: 4000
+
+# ============================================================================
+# SAFETY PARAMETERS (안전 파라미터)
+# ============================================================================
+safety:
+  doom_loop_threshold: 3
+  context_max_percent: 80
+  auto_revert: true
+  revert_on_score_drop: true
+  approval_mode: "auto"
+
+# ============================================================================
+# MARKET PARAMETERS (시장 파라미터)
+# ============================================================================
+market:
+  default_symbol: "BTCUSDT"
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+    - "SOLUSDT"
+  regimes:
+    - "trending"
+    - "ranging"
+    - "volatile"
+
+# ============================================================================
+# TELEMETRY
+# ============================================================================
+telemetry:
+  log_level: "info"
+  track_performance: true
+  track_costs: true
+  wandb:
+    enabled: false
+    project: "dsl-strategy-evolver"

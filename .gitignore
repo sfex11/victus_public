@@ -1,0 +1,7 @@
+﻿*.exe
+*.exe~
+*.log
+*.err
+*.txt
+.omc/
+test-request.json

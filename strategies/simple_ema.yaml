@@ -1,0 +1,14 @@
+name: "SimpleEMA"
+symbol: "BTCUSDT"
+type: "hedge"
+long:
+  entry: "price < ema(20)"
+  exit: "price > ema(20)"
+  stop_loss: 0.02
+short:
+  entry: "price > ema(20)"
+  exit: "price < ema(20)"
+  stop_loss: 0.02
+risk:
+  position_size: 100
+  max_positions: 2
