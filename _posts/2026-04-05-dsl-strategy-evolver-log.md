@@ -270,10 +270,10 @@ Evolver(:3004) → rustunnel → Oracle VPS(:4040→:8443 TLS) → nginx(:8080 H
 
 ## 관련 링크
 
-- [PRD 문서](https://github.com/sfex11/victus_public/blob/main/PRD.md)
-- [설계 문서 (DESIGN.md)](https://github.com/sfex11/victus_public/blob/main/DESIGN.md)
-- [팀 PRD (TEAM-PRD.md)](https://github.com/sfex11/victus_public/blob/main/TEAM-PRD.md)
-- [업그레이드 계획 (UPGRADE_PLAN.md)](https://github.com/sfex11/victus_public/blob/main/UPGRADE_PLAN.md)
+- [PRD 문서](https://github.com/sfex11/victus_public/blob/main/project/bigvolver/PRD.md)
+- [설계 문서 (DESIGN.md)](https://github.com/sfex11/victus_public/blob/main/project/bigvolver/DESIGN.md)
+- [팀 PRD (TEAM-PRD.md)](https://github.com/sfex11/victus_public/blob/main/project/bigvolver/TEAM-PRD.md)
+- [업그레이드 계획 (UPGRADE_PLAN.md)](https://github.com/sfex11/victus_public/blob/main/project/bigvolver/UPGRADE_PLAN.md)
 - [영감을 준 프로젝트: Quant-Autoresearch](https://github.com/yllvar/Quant-Autoresearch)
 - [Rustunnel](https://github.com/nicobailon/rustunnel)
 
