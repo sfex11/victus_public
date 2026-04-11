@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -331,6 +332,5 @@ func MockCandles(count int) []*data.Candle {
 }
 
 func randFloat() float64 {
-	// Simple deterministic pseudo-random for reproducibility
-	return 0.42 // placeholder
+	return rand.Float64()
 }

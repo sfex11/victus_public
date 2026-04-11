@@ -198,15 +198,23 @@ def predict():
     X = features_to_vector(features).reshape(1, -1)
     predicted_return = float(model.predict(X)[0])
 
-    # Determine signal
-    if predicted_return > 0.3:
+    # Determine signal — dynamic threshold based on ATR
+    atr = features.get("atr_14", 0)
+    close_price = features.get("ema_20", 50000)  # proxy for current price
+    if close_price > 0 and atr > 0:
+        # Threshold = 1 ATR as % of price (typically 0.1-0.5%)
+        dynamic_threshold = (atr / close_price) * 100
+    else:
+        dynamic_threshold = 0.3  # fallback default
+
+    if predicted_return > dynamic_threshold:
         signal = "LONG"
-    elif predicted_return < -0.3:
+    elif predicted_return < -dynamic_threshold:
         signal = "SHORT"
     else:
         signal = "NEUTRAL"
 
-    confidence = min(abs(predicted_return) / 2.0, 1.0)
+    confidence = min(abs(predicted_return) / max(dynamic_threshold*2, 0.1), 1.0)
 
     # SHAP-like feature importance (use built-in gain)
     importance = dict(zip(DEFAULT_FEATURES, model.feature_importance(importance_type="gain")))
@@ -232,23 +240,28 @@ def retrain():
     min_samples = data.get("min_samples", DEFAULT_MIN_SAMPLES)
 
     # --- Load training data ---
-    # Training data comes from the Go side via a JSON file
-    # Go pipeline writes features to: /data/training_data_{symbol}.jsonl
-    data_path = Path(os.environ.get("TRAINING_DATA_DIR", "./data")) / f"training_data_{symbol}.jsonl"
-
-    if not data_path.exists():
-        return jsonify({
-            "success": False,
-            "error": f"no training data at {data_path} — run Go feature pipeline first",
-        }), 400
-
-    # Load JSONL
+    # Option 1: Direct JSON body (records array)
+    # Option 2: JSONL file from Go pipeline
     records = []
-    with open(data_path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
+
+    if "records" in data and isinstance(data["records"], list) and len(data["records"]) > 0:
+        records = data["records"]
+        print(f"[INFO] Using {len(records)} records from request body")
+    else:
+        # Load from JSONL file
+        data_path = Path(os.environ.get("TRAINING_DATA_DIR", "./data")) / f"training_data_{symbol}.jsonl"
+
+        if not data_path.exists():
+            return jsonify({
+                "success": False,
+                "error": f"no training data at {data_path} — run Go feature pipeline first or send records in body",
+            }), 400
+
+        with open(data_path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    records.append(json.loads(line))
 
     if len(records) < min_samples:
         return jsonify({

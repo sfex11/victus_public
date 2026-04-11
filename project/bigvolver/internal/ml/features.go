@@ -354,11 +354,38 @@ func calcMACDLine(candles []*data.Candle) float64 {
 }
 
 func calcMACDSignal(candles []*data.Candle) float64 {
-	// Simplified signal line: 9-period EMA of close as proxy
-	if len(candles) < 9 {
+	// MACD Signal Line = 9-period EMA of MACD Line series
+	// Requires at least 26 (for EMA26) + 9 (for signal EMA) = 35 candles
+	if len(candles) < 35 {
 		return 0
 	}
-	return calcEMA(candles, 9)
+
+	// Build MACD Line time series
+	macdSeries := make([]float64, len(candles)-25)
+	for i := 25; i < len(candles); i++ {
+		window := candles[:i+1]
+		ema12 := calcEMA(window, 12)
+		ema26 := calcEMA(window, 26)
+		macdSeries[i-25] = ema12 - ema26
+	}
+
+	// Apply 9-period EMA on MACD series
+	if len(macdSeries) < 9 {
+		return 0
+	}
+
+	// SMA seed
+	sum := 0.0
+	for i := 0; i < 9; i++ {
+		sum += macdSeries[i]
+	}
+	signal := sum / 9.0
+
+	multiplier := 2.0 / 10.0
+	for i := 9; i < len(macdSeries); i++ {
+		signal = (macdSeries[i]-signal)*multiplier + signal
+	}
+	return signal
 }
 
 func calcATR(candles []*data.Candle, period int) float64 {
@@ -405,16 +432,16 @@ func calcBollinger(candles []*data.Candle, period int) (middle, std float64) {
 
 func calcADX(candles []*data.Candle, period int) float64 {
 	n := len(candles)
-	if n < period*2 {
+	if n < period*2+1 {
 		return 0
 	}
 
-	// Calculate +DM, -DM, and TR for each period
-	sumPlusDM := 0.0
-	sumMinusDM := 0.0
-	sumTR := 0.0
+	// Calculate +DM, -DM, and TR series
+	dmPlusSeries := make([]float64, 0, n)
+	dmMinusSeries := make([]float64, 0, n)
+	trSeries := make([]float64, 0, n)
 
-	for i := n - period; i < n; i++ {
+	for i := 1; i < n; i++ {
 		high := candles[i].High
 		low := candles[i].Low
 		prevHigh := candles[i-1].High
@@ -429,34 +456,76 @@ func calcADX(candles []*data.Candle, period int) float64 {
 		if lPrev := low - prevClose; lPrev > tr {
 			tr = lPrev
 		}
-		sumTR += tr
+		trSeries = append(trSeries, tr)
 
 		// +DM / -DM
 		upMove := high - prevHigh
 		downMove := prevLow - low
 
+		var dmPlus, dmMinus float64
 		if upMove > downMove && upMove > 0 {
-			sumPlusDM += upMove
+			dmPlus = upMove
 		}
 		if downMove > upMove && downMove > 0 {
-			sumMinusDM += downMove
+			dmMinus = downMove
 		}
+		dmPlusSeries = append(dmPlusSeries, dmPlus)
+		dmMinusSeries = append(dmMinusSeries, dmMinus)
 	}
 
-	if sumTR == 0 {
+	// Wilder smoothing: first value is SMA, then EMA with alpha = 1/period
+	smoothTR := wilderSmooth(trSeries, period)
+	smoothDMPlus := wilderSmooth(dmPlusSeries, period)
+	smoothDMMinus := wilderSmooth(dmMinusSeries, period)
+
+	// Build DX series
+	dxSeries := make([]float64, 0, len(smoothTR))
+	for i := 0; i < len(smoothTR); i++ {
+		if smoothTR[i] == 0 {
+			dxSeries = append(dxSeries, 0)
+			continue
+		}
+		plusDI := (smoothDMPlus[i] / smoothTR[i]) * 100
+		minusDI := (smoothDMMinus[i] / smoothTR[i]) * 100
+		diSum := plusDI + minusDI
+		if diSum == 0 {
+			dxSeries = append(dxSeries, 0)
+			continue
+		}
+		dx := math.Abs(plusDI-minusDI) / diSum * 100
+		dxSeries = append(dxSeries, dx)
+	}
+
+	// ADX = Wilder smoothing of DX
+	adxValues := wilderSmooth(dxSeries, period)
+	if len(adxValues) == 0 {
 		return 0
 	}
+	return adxValues[len(adxValues)-1]
+}
 
-	plusDI := (sumPlusDM / sumTR) * 100
-	minusDI := (sumMinusDM / sumTR) * 100
-
-	diSum := plusDI + minusDI
-	if diSum == 0 {
-		return 0
+// wilderSmooth applies Wilder's smoothing (first value = SMA, then EMA with alpha=1/period)
+func wilderSmooth(series []float64, period int) []float64 {
+	if len(series) < period {
+		return nil
 	}
 
-	dx := math.Abs(plusDI-minusDI) / diSum * 100
-	return dx // Simplified ADX (single-period DX as proxy)
+	result := make([]float64, len(series)-period+1)
+
+	// First value: simple average
+	sum := 0.0
+	for i := 0; i < period; i++ {
+		sum += series[i]
+	}
+	result[0] = sum / float64(period)
+
+	// Subsequent values: smoothed = prev - prev/period + current
+	alpha := 1.0 / float64(period)
+	for i := 1; i < len(result); i++ {
+		result[i] = result[i-1] - result[i-1]*alpha + series[i+period-1]
+	}
+
+	return result
 }
 
 func calcOBV(candles []*data.Candle) float64 {
@@ -464,15 +533,33 @@ func calcOBV(candles []*data.Candle) float64 {
 		return 0
 	}
 
-	obv := 0.0
+	obvSeries := make([]float64, len(candles))
+	obvSeries[0] = 0
 	for i := 1; i < len(candles); i++ {
 		if candles[i].Close > candles[i-1].Close {
-			obv += candles[i].Volume
+			obvSeries[i] = obvSeries[i-1] + candles[i].Volume
 		} else if candles[i].Close < candles[i-1].Close {
-			obv -= candles[i].Volume
+			obvSeries[i] = obvSeries[i-1] - candles[i].Volume
+		} else {
+			obvSeries[i] = obvSeries[i-1]
 		}
 	}
-	return obv
+
+	latestOBV := obvSeries[len(obvSeries)-1]
+
+	// Normalize: OBV / SMA(OBV, 20)
+	if len(obvSeries) >= 20 {
+		obvSMA := 0.0
+		for i := len(obvSeries) - 20; i < len(obvSeries); i++ {
+			obvSMA += obvSeries[i]
+		}
+		obvSMA /= 20.0
+		if obvSMA != 0 {
+			return latestOBV / obvSMA
+		}
+	}
+
+	return latestOBV
 }
 
 func calcVolumeRatio(candles []*data.Candle, period int) float64 {
