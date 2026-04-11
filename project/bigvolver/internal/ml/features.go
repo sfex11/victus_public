@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"time"
 
 	"dsl-strategy-evolver/internal/data"
 )
@@ -658,4 +659,9 @@ func (fp *FeaturePipeline) FeatureNames() []string {
 	}
 
 	return names
+}
+
+// CurrentTimestamp returns the current Unix timestamp
+func CurrentTimestamp() int64 {
+	return time.Now().Unix()
 }
