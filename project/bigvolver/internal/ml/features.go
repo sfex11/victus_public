@@ -63,7 +63,7 @@ func NewFeaturePipeline(config *FeatureConfig, repo *data.MarketDataRepository) 
 // ComputeFeaturesForSymbol generates feature sets for a symbol over its entire history
 func (fp *FeaturePipeline) ComputeFeaturesForSymbol(symbol string) ([]*FeatureSet, error) {
 	// Get all candles for this symbol
-	candles, err := fp.candleRepo.GetLatestCandles(symbol, 0)
+	candles, err := fp.candleRepo.GetHistoricalDataForBacktest(symbol, 365)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get candles: %w", err)
 	}
