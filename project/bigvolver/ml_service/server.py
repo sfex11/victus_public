@@ -332,7 +332,25 @@ def retrain():
         "win_rate": cv_metrics["win_rate"],
         "samples_used": len(records),
         "train_time_sec": 0,  # TODO: measure actual time
-    })
+    }
+
+    # Log training to telemetry
+    try:
+        import sys
+        telemetry_path = str(Path(__file__).parent.parent / "internal" / "telemetry")
+        if telemetry_path not in sys.path:
+            sys.path.insert(0, telemetry_path)
+        from tracker import get_tracker
+        tracker = get_tracker()
+        tracker.log_training(
+            model_type="lightgbm",
+            version=model_version,
+            params={"objective": "regression", "learning_rate": 0.05, "num_leaves": 31, "max_depth": 6},
+            metrics={"sharpe_ratio": cv_metrics["sharpe_ratio"], "win_rate": cv_metrics["win_rate"], "mse": cv_metrics["mse"]},
+            tags={"symbol": symbol, "phase": "retrain", "samples": str(len(records))},
+        )
+    except Exception as e:
+        print(f"[WARN] Telemetry logging failed: {e}")
 
 
 @app.route("/model/status", methods=["GET"])

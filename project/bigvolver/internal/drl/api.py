@@ -225,6 +225,30 @@ def train():
         # Get post-training metrics
         metrics = env.get_portfolio_metrics()
 
+        # Log training to telemetry
+        try:
+            import sys as _sys
+            telemetry_path = str(Path(__file__).parent.parent / "telemetry")
+            if telemetry_path not in _sys.path:
+                _sys.path.insert(0, telemetry_path)
+            from tracker import get_tracker
+            tracker = get_tracker()
+            tracker.log_training(
+                model_type=algorithm,
+                version=agent.model_version,
+                params=train_info.get("hyperparams", {}),
+                metrics={
+                    "sharpe_ratio": metrics["sharpe_ratio"],
+                    "win_rate": metrics["win_rate"],
+                    "mean_reward": train_info.get("eval_mean_reward", 0),
+                    "total_return": metrics["total_return"],
+                    "max_drawdown": metrics["max_drawdown"],
+                },
+                tags={"symbol": symbol, "phase": "drl_train", "timesteps": str(timesteps)},
+            )
+        except Exception as te:
+            print(f"[WARN] Telemetry logging failed: {te}")
+
         return jsonify({
             "success": True,
             "model_version": agent.model_version,
