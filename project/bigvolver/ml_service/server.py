@@ -75,14 +75,28 @@ def load_model():
 
 
 def save_model():
-    """Persist model and metadata to disk."""
+    """Persist model and metadata to disk (versioned)."""
     global model, model_version, model_metadata
     if model is None:
         return
+
+    # Save model with version in filename
+    versioned_model_path = MODEL_DIR / f"model_{model_version}.txt"
+    model.save_model(str(versioned_model_path))
+
+    # Also save as default (latest)
     model.save_model(str(MODEL_PATH))
+
+    # Save versioned metadata
     model_metadata["version"] = model_version
+    versioned_meta_path = MODEL_DIR / f"metadata_{model_version}.json"
+    with open(versioned_meta_path, "w") as f:
+        json.dump(model_metadata, f, indent=2)
+
+    # Also save as default metadata
     with open(MODEL_DIR / "metadata.json", "w") as f:
         json.dump(model_metadata, f, indent=2)
+
     print(f"[INFO] Saved model v{model_version}")
 
 
@@ -329,6 +343,107 @@ def model_status():
         "metadata": model_metadata,
         "feature_count": len(DEFAULT_FEATURES),
     })
+
+
+@app.route("/model/load", methods=["POST"])
+def load_specific_version():
+    """Load a specific model version from the models directory."""
+    global model, model_version, model_metadata
+
+    data = request.get_json() or {}
+    target_version = data.get("version", "")
+
+    if not target_version:
+        return jsonify({"success": False, "error": "missing 'version' field"}), 400
+
+    # Look for a model file matching the version
+    # Version format: lgm-YYYYMMDD-HHMMSS
+    # Model files saved with timestamp in metadata
+    model_files = sorted(MODEL_DIR.glob("*.txt"))
+
+    for mf in model_files:
+        # Try loading and checking metadata
+        try:
+            candidate = lgb.Booster(model_file=str(mf))
+        except Exception:
+            continue
+
+        # Check if this matches the requested version
+        # Try to find matching metadata file
+        meta_file = MODEL_DIR / "metadata.json"
+        if meta_file.exists():
+            with open(meta_file) as f:
+                all_meta = json.load(f)
+            # Check if any saved version matches
+            # The metadata stores the latest; for older versions, check model dir
+
+    # Strategy: find metadata files with version info
+    meta_files = sorted(MODEL_DIR.glob("metadata_*.json"))
+    for mf in meta_files:
+        try:
+            with open(mf) as f:
+                meta = json.load(f)
+            if meta.get("version") == target_version:
+                model_path = MODEL_DIR / f"model_{target_version}.txt"
+                if not model_path.exists():
+                    return jsonify({
+                        "success": False,
+                        "error": f"model file not found for version {target_version}",
+                    }), 404
+
+                model = lgb.Booster(model_file=str(model_path))
+                model_version = target_version
+                model_metadata = meta
+                print(f"[INFO] Loaded model version {target_version}")
+                return jsonify({"success": True, "version": target_version})
+        except Exception:
+            continue
+
+    return jsonify({
+        "success": False,
+        "error": f"version {target_version} not found in registry",
+    }), 404
+
+
+@app.route("/model/list", methods=["GET"])
+def list_versions():
+    """List all available model versions."""
+    versions = []
+
+    # Read from metadata files
+    for mf in sorted(MODEL_DIR.glob("metadata_*.json")):
+        try:
+            with open(mf) as f:
+                meta = json.load(f)
+            versions.append({
+                "version": meta.get("version", "unknown"),
+                "trained_at": meta.get("trained_at", ""),
+                "sharpe_ratio": meta.get("sharpe_ratio", 0),
+                "win_rate": meta.get("win_rate", 0),
+                "samples_used": meta.get("samples_used", 0),
+            })
+        except Exception:
+            continue
+
+    # Also check default metadata
+    default_meta = MODEL_DIR / "metadata.json"
+    if default_meta.exists():
+        try:
+            with open(default_meta) as f:
+                meta = json.load(f)
+            ver = meta.get("version", "unknown")
+            if not any(v["version"] == ver for v in versions):
+                versions.append({
+                    "version": ver,
+                    "trained_at": meta.get("trained_at", ""),
+                    "sharpe_ratio": meta.get("sharpe_ratio", 0),
+                    "win_rate": meta.get("win_rate", 0),
+                    "samples_used": meta.get("samples_used", 0),
+                })
+        except Exception:
+            pass
+
+    return jsonify({"versions": versions, "current": model_version})
 
 
 if __name__ == "__main__":

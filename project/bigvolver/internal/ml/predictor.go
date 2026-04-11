@@ -153,3 +153,65 @@ func (p *Predictor) HealthCheck() error {
 func (p *Predictor) GetModelVersion() string {
 	return p.modelVer
 }
+
+// TriggerRetrainWithRecords sends training records directly in the request body
+func (p *Predictor) TriggerRetrainWithRecords(jsonBody []byte) (*RetrainResponse, error) {
+	resp, err := p.httpClient.Post(
+		p.baseURL+"/retrain",
+		"application/json",
+		bytes.NewReader(jsonBody),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("retrain request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("retrain error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	var result RetrainResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode retrain response: %w", err)
+	}
+
+	if result.Success {
+		p.modelVer = result.ModelVersion
+	}
+	return &result, nil
+}
+
+// LoadModelVersion asks the Python service to load a specific model version
+func (p *Predictor) LoadModelVersion(version string) error {
+	body := map[string]string{"version": version}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshal load request: %w", err)
+	}
+
+	resp, err := p.httpClient.Post(
+		p.baseURL+"/model/load",
+		"application/json",
+		bytes.NewReader(jsonBody),
+	)
+	if err != nil {
+		return fmt.Errorf("load model request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("load model error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("decode load response: %w", err)
+	}
+
+	if success, ok := result["success"].(bool); ok && success {
+		p.modelVer = version
+	}
+	return nil
+}
