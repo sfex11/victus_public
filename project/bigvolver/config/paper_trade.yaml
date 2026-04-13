@@ -1,0 +1,25 @@
+# NFI vs BigVolver 듀얼 가상매매 설정
+paper_trade:
+  initial_capital: 10000.0
+  fee_rate: 0.001        # 0.1% (Binance 기준)
+  slippage: 0.01          # 1% (NFI 기준)
+  max_positions: 8
+  stake_currency: USDT
+  timeframe: 5m
+  freqtrade_db_path: "./data/freqtrade-tradesv3.sqlite"
+
+nfi:
+  enabled: true
+  # NFI는 Freqtrade dry-run으로 별도 실행, webhook으로 시그널 전송
+  webhook_port: 8080
+  signal_path: "/api/v1/nfi/signals"
+
+bigvolver:
+  enabled: true
+  ml_service_url: "http://localhost:5001"
+  model_version: "latest"
+
+comparator:
+  evaluation_interval: "1h"
+  report_interval: "24h"
+  dashboard_path: "./dashboard/comparator.html"
