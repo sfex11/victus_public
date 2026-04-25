@@ -1,0 +1,11 @@
+{
+  "name": "bigvolver-ml-service",
+  "version": "1.0.0",
+  "description": "LightGBM prediction service for BigVolver V2",
+  "main": "server.py",
+  "scripts": {
+    "start": "python server.py",
+    "install": "pip install -r requirements.txt"
+  },
+  "dependencies": {}
+}

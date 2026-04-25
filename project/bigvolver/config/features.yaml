@@ -1,0 +1,377 @@
+# BigVolver V2 — Feature Set Definition
+# 작성: 헥스 (2026-04-11)
+# 
+# 이 파일은 ML 파이프라인의 공식 피처셋 정의서다.
+# Go(internal/ml/features.go)와 Python(ml_service/server.py) 양쪽에서
+# 동일한 피처 순서와 정의를 사용해야 한다.
+#
+# Category: technical | microstructure | derived | target
+# Status: active | planned | deprecated
+# Required: true면 항상 포함, false면 선택적
+
+version: "2.0"
+last_updated: "2026-04-11"
+
+metadata:
+  total_features: 32        # active 기준
+  target_features: 2         # 분류 1 + 회귀 1
+  default_horizon_hours: 4   # 기본 예측 horizon
+  min_candles: 200           # 최소 필요 캔들 수
+  update_interval_hours: 6   # 피처셋 업데이트 주기
+
+# ============================================================
+# Category 1: Technical Indicators (15 features)
+# ============================================================
+technical:
+  # --- Trend ---
+  - name: ema_5
+    description: "5-period Exponential Moving Average (원가)"
+    source: close
+    period: 5
+    type: level
+    status: active
+    required: true
+
+  - name: ema_20
+    description: "20-period EMA (원가)"
+    source: close
+    period: 20
+    type: level
+    status: active
+    required: true
+
+  - name: ema_50
+    description: "50-period EMA (원가)"
+    source: close
+    period: 50
+    type: level
+    status: active
+    required: true
+
+  - name: ema_200
+    description: "200-period EMA (원가)"
+    source: close
+    period: 200
+    type: level
+    status: active
+    required: true
+
+  # --- Momentum ---
+  - name: rsi_14
+    description: "14-period Relative Strength Index"
+    source: close
+    period: 14
+    type: oscillator
+    range: [0, 100]
+    status: active
+    required: true
+
+  - name: rsi_28
+    description: "28-period RSI (장기 모멘텀)"
+    source: close
+    period: 28
+    type: oscillator
+    range: [0, 100]
+    status: active
+    required: true
+
+  - name: macd_line
+    description: "MACD Line = EMA(12) - EMA(26)"
+    source: close
+    params: { fast: 12, slow: 26 }
+    type: momentum
+    status: active
+    required: true
+
+  - name: macd_signal
+    description: "MACD Signal Line = EMA(MACD Line, 9)"
+    source: macd_line
+    period: 9
+    type: momentum
+    status: active
+    required: true
+    # ⚠️ BUG FIX: 현재 구현은 close의 EMA(9)를 반환함.
+    #    정상 구현: MACD Line 자체의 9-period EMA를 계산해야 함.
+    #    calcMACDSignal() 수정 필요.
+
+  - name: macd_histogram
+    description: "MACD Histogram = MACD Line - Signal Line"
+    source: computed
+    formula: "macd_line - macd_signal"
+    type: momentum
+    status: active
+    required: true
+
+  # --- Volatility ---
+  - name: atr_14
+    description: "14-period Average True Range"
+    source: high, low, close
+    period: 14
+    type: volatility
+    status: active
+    required: true
+
+  - name: bollinger_upper
+    description: "Bollinger Bands Upper = SMA(20) + 2*STD(20)"
+    source: close
+    period: 20
+    params: { std_mult: 2.0 }
+    type: volatility
+    status: active
+    required: true
+
+  - name: bollinger_lower
+    description: "Bollinger Bands Lower = SMA(20) - 2*STD(20)"
+    source: close
+    period: 20
+    params: { std_mult: 2.0 }
+    type: volatility
+    status: active
+    required: true
+
+  # --- Trend Strength ---
+  - name: adx_14
+    description: "14-period Average Directional Index"
+    source: high, low, close
+    period: 14
+    type: trend
+    range: [0, 100]
+    status: active
+    required: true
+    # NOTE: 현재 구현은 단일 DX를 반환 (simplified).
+    #       완전한 ADX는 DX의 smoothed average. 향후 개선 권장.
+
+  # --- Volume ---
+  - name: obv
+    description: "On-Balance Volume (누적값)"
+    source: close, volume
+    type: volume
+    status: active
+    required: true
+    # NOTE: 누적값이라 스케일이 무한대. 정규화 필요 (OBV / OBV_SMA(20) 등)
+
+  - name: volume_ratio
+    description: "Volume Ratio = current_volume / SMA(volume, 20)"
+    source: volume
+    period: 20
+    type: volume
+    status: active
+    required: true
+
+# ============================================================
+# Category 2: Market Microstructure (6 features)
+# ============================================================
+microstructure:
+  - name: funding_rate
+    description: "현재 펀딩레이트 (% per 8h)"
+    source: binance_funding
+    interval: 8h
+    type: rate
+    status: active
+    required: true
+
+  - name: funding_rate_change_1h
+    description: "1시간 전 대비 펀딩레이트 변화"
+    source: binance_funding
+    type: delta
+    status: active
+    required: true
+
+  - name: funding_rate_change_8h
+    description: "8시간 전 대비 펀딩레이트 변화"
+    source: binance_funding
+    type: delta
+    status: active
+    required: true
+
+  - name: open_interest_change
+    description: "Open Interest 4h 변화율 (%)"
+    source: binance_oi
+    type: delta
+    status: planned      # 🆕 빅터스 코드에 없음 — Phase B에서 추가
+    required: false
+
+  - name: long_short_ratio
+    description: "전체 Long/Short 비율"
+    source: binance_ls
+    type: ratio
+    status: planned      # 🆕 빅터스 코드에 없음 — Phase B에서 추가
+    required: false
+
+  - name: top_trader_ls_ratio
+    description: "탑 트레이더 Long/Short 비율"
+    source: binance_ls
+    type: ratio
+    status: planned      # 🆕 빅터스 코드에 없음 — Phase B에서 추가
+    required: false
+
+# ============================================================
+# Category 3: Derived Features (9 features)
+# ============================================================
+derived:
+  # --- Multi-timeframe Volatility ---
+  - name: volatility_1h
+    description: "1시간 수익률의 표준편차 (%)"
+    source: computed
+    window: 1h
+    type: volatility
+    status: active
+    required: true
+
+  - name: volatility_4h
+    description: "4시간 수익률의 표준편차 (%)"
+    source: computed
+    window: 4h
+    type: volatility
+    status: active
+    required: true
+
+  - name: volatility_24h
+    description: "24시간 수익률의 표준편차 (%)"
+    source: computed
+    window: 24h
+    type: volatility
+    status: active
+    required: true
+
+  # --- Multi-timeframe Momentum ---
+  - name: momentum_1h
+    description: "1시간 모멘텀 = (now - 1h ago) / 1h ago * 100"
+    source: computed
+    window: 1h
+    type: momentum
+    status: active
+    required: true
+
+  - name: momentum_4h
+    description: "4시간 모멘텀"
+    source: computed
+    window: 4h
+    type: momentum
+    status: active
+    required: true
+
+  # --- Mean Reversion ---
+  - name: mean_reversion_score
+    description: "가격이 EMA(20)에서 얼마나 벗어났는지 (%)"
+    source: computed
+    formula: "(close - ema_20) / ema_20 * 100"
+    type: mean_reversion
+    status: active
+    required: true
+
+  # --- Regime Detection ---
+  - name: regime_trending
+    description: "트렌딩 국면 확률 (ADX 기반)"
+    source: computed
+    type: regime
+    range: [0, 1]
+    status: active
+    required: true
+
+  - name: regime_ranging
+    description: "횡보 국면 확률"
+    source: computed
+    type: regime
+    range: [0, 1]
+    status: active
+    required: true
+
+  - name: regime_volatile
+    description: "변동성 국면 확률"
+    source: computed
+    type: regime
+    range: [0, 1]
+    status: active
+    required: true
+
+# ============================================================
+# Category 4: Target Variables (2 features)
+# ============================================================
+target:
+  - name: future_return_1h
+    description: "1시간 후 수익률 — 분류용 (positive=1, negative=0)"
+    source: computed
+    horizon: 1h
+    type: classification
+    status: planned      # 🆕 현재 4h만 있음 — 추가 필요
+    required: false
+
+  - name: future_return_4h
+    description: "4시간 후 수익률 — 회귀용 (연속값)"
+    source: computed
+    horizon: 4h
+    type: regression
+    status: active
+    required: true
+
+# ============================================================
+# Feature Engineering Rules
+# ============================================================
+rules:
+  # 결측치 처리
+  missing_values:
+    policy: "forward_fill_then_zero"
+    description: |
+      1. 마지막 유효값으로 forward fill
+      2. 첫 200캔들은 계산 불가 → 0으로 대체
+      3. funding_rate 등 외부 데이터 결측 → 0으로 대체
+      
+  # 정규화
+  normalization:
+    method: "none_in_training"
+    description: |
+      LightGBM은 tree-based이라 정규화 불필요.
+      단, OBV 같은 누적값은 log 변환 고려.
+      Python 서비스 측에서 자동 처리.
+      
+  # 피처 선택
+  selection:
+    method: "lightgbm_importance"
+    description: |
+      학습 후 feature_importance(gain) 기준 하위 10%는 자동 제거.
+      재훈련 시마다 재평가.
+      
+  # 상관관계 필터링
+  correlation_filter:
+    threshold: 0.95
+    action: "drop_higher_variance"
+    description: |
+      피처 간 상관관계 > 0.95면 분산이 낮은 쪽 제거.
+      ema_5 vs ema_20, volatility_1h vs volatility_4h 등 주의.
+
+# ============================================================
+# 피처 순서 (Go ↔ Python 동기화용)
+# ============================================================
+feature_order:
+  - ema_5
+  - ema_20
+  - ema_50
+  - ema_200
+  - rsi_14
+  - rsi_28
+  - macd_line
+  - macd_signal
+  - macd_histogram
+  - atr_14
+  - bollinger_upper
+  - bollinger_lower
+  - adx_14
+  - obv
+  - volume_ratio
+  - funding_rate
+  - funding_rate_change_1h
+  - funding_rate_change_8h
+  # --- Phase B에서 추가 ---
+  # - open_interest_change
+  # - long_short_ratio
+  # - top_trader_ls_ratio
+  - volatility_1h
+  - volatility_4h
+  - volatility_24h
+  - momentum_1h
+  - momentum_4h
+  - mean_reversion_score
+  - regime_trending
+  - regime_ranging
+  - regime_volatile

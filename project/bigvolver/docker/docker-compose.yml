@@ -1,0 +1,16 @@
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    container_name: freqtrade-nfi
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./freqtrade/user_data:/freqtrade/user_data
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade.log
+      --config /freqtrade/user_data/config.json
+      --strategy NostalgiaForInfinityX2
+    environment:
+      - FREQTRADE_LOG_LEVEL=INFO

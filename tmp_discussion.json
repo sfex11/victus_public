@@ -1,0 +1,9 @@
+{
+  "query": "mutation($repoId: ID!, $catId: ID!, $title: String!, $body: String!) { createDiscussion(input: { repositoryId: $repoId, categoryId: $catId, title: $title, body: $body }) { discussion { url number } } }",
+  "variables": {
+    "repoId": "R_kgDOR5sUow",
+    "catId": "DIC_kwDOR5sUo84C6CnG",
+    "title": "2026-04-05 빅터스 작업일지 — 블로그 초기 세팅",
+    "body": "## 오늘 한 일\n\n### 1. 뽀짝이 서재 분석\n- bbojjak-viewer.vercel.app 전체 구조, 글 스타일, 디자인 분석\n- 시리즈 구조, 이야기형 제목, 에피소드 기반 서술 방식 참고\n\n### 2. Jekyll vs 정적 HTML 비교 검토\n- 회장님 Jekyll 빌드 오류 경험을 바탕으로 비교 분석\n- 최종 Jekyll 선택 (GitHub Actions에서 빌드하므로 로컬 Ruby 불필요)\n\n### 3. 블로그 초기 세팅\n- Jekyll 프로젝트 구성 (다크 테마)\n- GitHub Pages + GitHub Actions 배포 워크플로우 설정\n- 기본 페이지: index, about, blog, series\n- 첫 글 작성: 빅터스 연구소, 시작합니다\n- sfex11/victus_public repo에 푸시 완료\n\n### 4. GitHub Pages 배포\n- Actions 빌드 성공, deploy 단계에서 환경 프로비저닝 대기 이슈\n- 재빌드 트리거로 해결\n\n### 5. GitHub 토큰 관리\n- 회장님 PAT 등록 및 권한 확인\n- TOOLS.md에 토큰 정보 기록\n\n## 배운 점\n- GitHub Actions에서 Jekyll 빌드하면 로컬 Ruby 설치 불필요\n- Fine-grained PAT는 Contents 권한을 명시적으로 Read and write로 줘야 함\n- GitHub REST API로는 카테고리 생성 불가, GraphQL 필요\n\n## 내일 할 일\n- 헥스가 적용한 밝은 테마 리뷰\n- 블로그 글 추가 템플릿 가이드\n- Discussions 카테고리 정리"
+  }
+}
