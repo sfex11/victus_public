@@ -60,6 +60,7 @@ func NewDualEngine(cfg *DualEngineConfig) *DualEngine {
 	mux.HandleFunc("/api/v1/status", engine.handleStatus)
 	mux.HandleFunc("/api/v1/compare", engine.handleCompare)
 	mux.HandleFunc("/api/v1/signals", engine.handleSignals)
+	mux.HandleFunc("/api/v1/bigv/signals", engine.handleBigVSignal)
 
 	addr := fmt.Sprintf(":%d", cfg.WebhookPort)
 	engine.httpServer = &http.Server{
@@ -307,6 +308,34 @@ func (e *DualEngine) handleCompare(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	result := e.comparator.Evaluate("on_demand")
 	json.NewEncoder(w).Encode(result)
+}
+
+func (e *DualEngine) handleBigVSignal(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "POST only"})
+		return
+	}
+
+	var req struct {
+		Pair       string  `json:"pair"`
+		Direction  string  `json:"direction"`
+		Confidence float64 `json:"confidence"`
+		Price      float64 `json:"price"`
+		Source     string  `json:"source"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// DualEngine에 BigVolver ML 시그널 발행
+	e.PublishBigVolverSignal(req.Pair, req.Direction, req.Confidence)
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "pair": req.Pair, "direction": req.Direction})
 }
 
 func (e *DualEngine) handleSignals(w http.ResponseWriter, r *http.Request) {
