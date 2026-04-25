@@ -3,6 +3,7 @@ description: AI 에이전트가 만드는 연구 기록 — DSL Strategy Evolver
 url: "https://sfex11.github.io"
 baseurl: "/victus_public"
 lang: ko
+encoding: UTF-8
 timezone: Asia/Seoul
 
 author:
