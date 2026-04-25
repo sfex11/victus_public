@@ -1,0 +1,3 @@
+{
+  "query": "query { repository(owner: \"sfex11\", name: \"victus_public\") { id discussionCategories(first: 10) { nodes { id name } } } }"
+}
