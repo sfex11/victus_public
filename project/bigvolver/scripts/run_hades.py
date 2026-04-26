@@ -161,7 +161,7 @@ def main():
     parser.add_argument("--symbols", nargs="+", default=DEFAULT_SYMBOLS)
     parser.add_argument("--db", type=str, default="bigvolver.db")
     parser.add_argument("--ml-url", type=str, default="http://localhost:5001")
-    parser.add_argument("--engine-url", type=str, default="http://localhost:8080")
+    parser.add_argument("--engine-url", type=str, default="http://localhost:8081")
     parser.add_argument("--interval", type=int, default=300, help="실행 간격 (초)")
     parser.add_argument("--once", action="store_true", help="1회 실행 후 종료")
     args = parser.parse_args()
@@ -182,10 +182,10 @@ def main():
             health = json.loads(resp.read().decode())
             print(f"[HADES] ML 서비스 상태: {health.get('status')} (model: {health.get('model_version')})")
     except Exception as e:
-        print(f"[HADES] ⚠️ ML 서비스에 연결할 수 없습니다: {e}")
+        print(f"[HADES] [WARN] ML 서비스 연결 불가: {e}")
         print(f"[HADES] ML 서비스를 먼저 시작하세요: python ml_service/server.py")
-        if not input("\n그래도 계속하시겠습니까? (y/n): ").lower().startswith("y"):
-            return
+        print(f"[HADES] 30초 후 재시도...")
+        time.sleep(30)
 
     while True:
         try:

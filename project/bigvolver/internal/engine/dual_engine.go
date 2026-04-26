@@ -332,8 +332,36 @@ func (e *DualEngine) handleBigVSignal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// DualEngine에 BigVolver ML 시그널 발행
-	e.PublishBigVolverSignal(req.Pair, req.Direction, req.Confidence)
+	// 시그널 버스에 기록
+	signal := TradingSignal{
+		Timestamp:  time.Now(),
+		Source:     "BIGVOLVER_ML",
+		Pair:       req.Pair,
+		Direction:  req.Direction,
+		Confidence: req.Confidence,
+		Mode:       "ml_predicted",
+		Reason:     fmt.Sprintf("BigVolver ML (conf: %.3f)", req.Confidence),
+	}
+	e.signalBus.Publish(signal)
+
+	// 가격이 제공되면 직접 포지션 처리
+	if req.Price > 0 {
+		if req.Direction == "LONG" || req.Direction == "SHORT" {
+			err := e.bigvPocket.OpenPosition(req.Pair, req.Direction, req.Price)
+			if err != nil {
+				log.Printf("[DualEngine] BigV 포지션 오픈 실패 (%s): %v", req.Pair, err)
+			} else {
+				log.Printf("[DualEngine] BigV %s %s 진입 (가격: %.2f)", req.Direction, req.Pair, req.Price)
+			}
+		} else if req.Direction == "CLOSE" {
+			err := e.bigvPocket.ClosePosition(req.Pair, req.Price, "ml_close")
+			if err != nil {
+				log.Printf("[DualEngine] BigV 포지션 청산 실패 (%s): %v", req.Pair, err)
+			} else {
+				log.Printf("[DualEngine] BigV CLOSE %s (가격: %.2f)", req.Pair, req.Price)
+			}
+		}
+	}
 
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "pair": req.Pair, "direction": req.Direction})
 }

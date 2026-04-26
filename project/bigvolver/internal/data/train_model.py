@@ -10,7 +10,7 @@ import lightgbm as lgb
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
 
-TRAINING_DIR = Path(r"C:\Users\Test\.openclaw\workspace-hex\project\bigvolver\project\bigvolver\internal\data\training_data")
+TRAINING_DIR = Path(os.environ.get("TRAINING_DATA_DIR", r"C:\Users\Test\.openclaw\workspace-hex\project\bigvolver\training_data"))
 MODEL_DIR = Path(r"C:\Users\Test\.openclaw\workspace-hex\project\bigvolver\project\bigvolver\models")
 MODEL_DIR.mkdir(exist_ok=True)
 
@@ -35,11 +35,17 @@ def train(symbol="BTCUSDT"):
         return
 
     records = []
+    bad = 0
     with open(data_path) as f:
         for line in f:
             line = line.strip()
             if line:
-                records.append(json.loads(line))
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError:
+                    bad += 1
+    if bad:
+        print(f"Skipped {bad} bad lines")
 
     print(f"Loaded {len(records)} records from {data_path}")
 

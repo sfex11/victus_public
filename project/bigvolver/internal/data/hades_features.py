@@ -193,7 +193,7 @@ def volume_ratio(candles: List[Dict], period: int = 20) -> float:
     if n < period:
         return 1.0
     current = candles[-1]["volume"]
-    avg = sum(c[n - period:]["volume"] for c in candles) / period
+    avg = sum(c["volume"] for c in candles[n - period:]) / period
     return current / avg if avg > 0 else 1.0
 
 
